@@ -4,6 +4,8 @@ import { existsSync } from 'fs';
 import path from 'path';
 import { getCurrentUser } from '@/lib/auth';
 
+export const dynamic = 'force-dynamic';
+
 // POST: Upload file (logo, kop surat, foto guru, foto siswa, dll)
 export async function POST(request: NextRequest) {
   try {

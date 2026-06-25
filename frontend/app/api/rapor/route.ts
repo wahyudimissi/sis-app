@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
 import { z } from 'zod';
 
+export const dynamic = 'force-dynamic';
+
 // Validation schema
 const raporSchema = z.object({
   tahunAjaranId: z.string().uuid(),

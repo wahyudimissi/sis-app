@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import prisma from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
 
-const prisma = new PrismaClient();
+export const dynamic = 'force-dynamic';
 
 // GET /api/ppdb/[id] - Get single pendaftaran
 export async function GET(

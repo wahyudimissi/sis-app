@@ -4,6 +4,8 @@ import { ApiResponseHelper } from '@/lib/api-response';
 import { comparePassword, generateToken, setAuthCookie } from '@/lib/auth';
 import { z } from 'zod';
 
+export const dynamic = 'force-dynamic';
+
 // Validation schema
 const loginSchema = z.object({
   username: z.string().min(1, 'Username is required'),

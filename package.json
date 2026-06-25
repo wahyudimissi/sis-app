@@ -1,4 +1,16 @@
 {
+  "name": "sis-app",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix frontend run dev",
+    "build": "npm --prefix frontend run build",
+    "start": "npm --prefix frontend run start",
+    "lint": "npm --prefix frontend run lint",
+    "prisma:generate": "npm --prefix frontend run prisma:generate",
+    "prisma:migrate": "npm --prefix frontend run prisma:migrate",
+    "prisma:studio": "npm --prefix frontend run prisma:studio"
+  },
   "dependencies": {
     "@prisma/client": "^5.22.0",
     "bcryptjs": "^3.0.3",

@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
 import { z } from 'zod';
 
+export const dynamic = 'force-dynamic';
+
 // Validation schema for batch generation
 const generateRaporSchema = z.object({
   tahunAjaranId: z.string().uuid(),

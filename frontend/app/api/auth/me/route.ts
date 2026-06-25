@@ -3,6 +3,8 @@ import prisma from '@/lib/prisma';
 import { ApiResponseHelper } from '@/lib/api-response';
 import { getCurrentUser } from '@/lib/auth';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     // Get current user from token

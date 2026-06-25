@@ -2,6 +2,8 @@ import { NextRequest } from 'next/server';
 import { ApiResponseHelper } from '@/lib/api-response';
 import { removeAuthCookie } from '@/lib/auth';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     // Remove auth cookie

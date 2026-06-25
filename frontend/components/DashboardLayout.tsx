@@ -18,7 +18,6 @@ import {
   Bell,
   User,
   LogOut,
-  ChevronRight,
 } from 'lucide-react';
 
 interface DashboardLayoutProps {
@@ -69,17 +68,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter();
   const { user, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [expandedMenu, setExpandedMenu] = useState<string | null>(null);
   const [userMenuOpen, setUserMenuOpen] = useState(false);  // NEW
 
   const handleLogout = async () => {
     if (confirm('Apakah Anda yakin ingin logout?')) {
       await logout();
     }
-  };
-
-  const toggleMenu = (label: string) => {
-    setExpandedMenu(expandedMenu === label ? null : label);
   };
 
   return (
@@ -159,48 +153,42 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       >
         <nav className="p-3 space-y-1">
           {menuItems.map((item) => (
-            <div key={item.label}>
-              {/* Parent Menu */}
-              <button
-                onClick={() => {
-                  if (item.children) {
-                    toggleMenu(item.label);
-                  } else {
+            <div key={item.label} className={item.children ? 'pt-3 first:pt-0' : ''}>
+              {item.children ? (
+                <>
+                  <div className="px-3 pb-2">
+                    <div className="flex items-center space-x-2 text-xs font-semibold uppercase tracking-wide text-gray-400">
+                      <item.icon size={14} />
+                      <span>{item.label}</span>
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    {item.children.map((child) => (
+                      <button
+                        key={child.label}
+                        onClick={() => {
+                          router.push(child.href);
+                          setSidebarOpen(false);
+                        }}
+                        className="w-full flex items-center space-x-3 px-3 py-2.5 text-sm text-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 hover:text-blue-600 rounded-lg transition-all group"
+                      >
+                        <child.icon size={18} className="group-hover:scale-110 transition-transform" />
+                        <span className="font-medium">{child.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <button
+                  onClick={() => {
                     router.push(item.href);
                     setSidebarOpen(false);
-                  }
-                }}
-                className="w-full flex items-center justify-between px-3 py-2.5 text-sm text-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 hover:text-blue-600 rounded-lg transition-all group"
-              >
-                <div className="flex items-center space-x-3">
+                  }}
+                  className="w-full flex items-center space-x-3 px-3 py-2.5 text-sm text-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 hover:text-blue-600 rounded-lg transition-all group"
+                >
                   <item.icon size={18} className="group-hover:scale-110 transition-transform" />
                   <span className="font-medium">{item.label}</span>
-                </div>
-                {item.children && (
-                  <ChevronRight 
-                    size={16} 
-                    className={`transition-transform ${expandedMenu === item.label ? 'rotate-90' : ''}`}
-                  />
-                )}
-              </button>
-
-              {/* Submenu - CSS transition */}
-              {item.children && expandedMenu === item.label && (
-                <div className="ml-4 mt-1 space-y-1 animate-slide-down">
-                  {item.children.map((child) => (
-                    <button
-                      key={child.label}
-                      onClick={() => {
-                        router.push(child.href);
-                        setSidebarOpen(false);
-                      }}
-                      className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:text-blue-600 hover:bg-blue-50/50 rounded-lg transition-colors hover:translate-x-1"
-                    >
-                      <child.icon size={16} />
-                      <span>{child.label}</span>
-                    </button>
-                  ))}
-                </div>
+                </button>
               )}
             </div>
           ))}
