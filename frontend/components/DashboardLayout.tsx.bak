@@ -1,0 +1,299 @@
+'use client';
+
+import { useState, ReactNode } from 'react';
+import { useRouter } from 'next/navigation';
+import {
+  FaTachometerAlt,
+  FaUserGraduate,
+  FaChalkboardTeacher,
+  FaSchool,
+  FaCalendarAlt,
+  FaClipboardList,
+  FaBook,
+  FaChartBar,
+  FaFileAlt,
+  FaMoneyBillWave,
+  FaBullhorn,
+  FaBookReader,
+  FaBoxes,
+  FaUsers,
+  FaCog,
+  FaBars,
+  FaTimes,
+  FaBell,
+  FaUserCircle,
+  FaSignOutAlt,
+  FaUserTie,
+  FaBriefcase,
+  FaClipboardCheck,
+} from 'react-icons/fa';
+
+interface DashboardLayoutProps {
+  children: ReactNode;
+  role?: string;
+}
+
+interface MenuItem {
+  label: string;
+  icon: any;
+  href: string;
+  roles: string[];
+  children?: MenuItem[];
+}
+
+const menuItems: MenuItem[] = [
+  {
+    label: 'Dashboard',
+    icon: FaTachometerAlt,
+    href: '/dashboard',
+    roles: ['all'],
+  },
+  {
+    label: 'Master Data',
+    icon: FaSchool,
+    href: '#',
+    roles: ['superadmin', 'admin', 'kepala_sekolah'],
+    children: [
+      { label: 'Profil Sekolah', icon: FaSchool, href: '/master/profil-sekolah', roles: ['superadmin', 'admin'] },
+      { label: 'Tahun Ajaran', icon: FaCalendarAlt, href: '/master/tahun-ajaran', roles: ['superadmin', 'admin'] },
+      { label: 'Mata Pelajaran', icon: FaBook, href: '/master/mata-pelajaran', roles: ['superadmin', 'admin'] },
+      { label: 'Data Guru', icon: FaChalkboardTeacher, href: '/master/guru', roles: ['superadmin', 'admin'] },
+      { label: 'Data Siswa', icon: FaUserGraduate, href: '/master/siswa', roles: ['superadmin', 'admin'] },
+      { label: 'Data Kelas', icon: FaSchool, href: '/master/kelas', roles: ['superadmin', 'admin'] },
+    ],
+  },
+  {
+    label: 'Akademik',
+    icon: FaBook,
+    href: '#',
+    roles: ['all'],
+    children: [
+      { label: 'Jadwal Pelajaran', icon: FaCalendarAlt, href: '/akademik/jadwal', roles: ['all'] },
+      { label: 'Absensi', icon: FaClipboardList, href: '/akademik/absensi', roles: ['guru', 'wali_kelas', 'admin'] },
+      { label: 'Penilaian', icon: FaChartBar, href: '/akademik/penilaian', roles: ['guru', 'wali_kelas'] },
+      { label: 'E-Rapor', icon: FaFileAlt, href: '/akademik/rapor', roles: ['all'] },
+    ],
+  },
+  {
+    label: 'LMS',
+    icon: FaBookReader,
+    href: '/lms',
+    roles: ['guru', 'siswa', 'wali_kelas'],
+  },
+  {
+    label: 'Kesiswaan',
+    icon: FaUserGraduate,
+    href: '#',
+    roles: ['admin', 'guru', 'kepala_sekolah'],
+    children: [
+      { label: 'Prakerin/PKL', icon: FaBriefcase, href: '/kesiswaan/pkl', roles: ['admin', 'guru', 'kepala_sekolah'] },
+      { label: 'BKK', icon: FaUserTie, href: '/kesiswaan/bkk', roles: ['admin', 'admin_bkk', 'kepala_sekolah'] },
+    ],
+  },
+  {
+    label: 'PPDB Online',
+    icon: FaClipboardCheck,
+    href: '/ppdb-management',
+    roles: ['admin', 'admin_ppdb', 'kepala_sekolah'],
+  },
+  {
+    label: 'Perpustakaan',
+    icon: FaBook,
+    href: '/perpustakaan',
+    roles: ['petugas_perpustakaan', 'admin', 'siswa'],
+  },
+  {
+    label: 'Inventaris',
+    icon: FaBoxes,
+    href: '/inventaris',
+    roles: ['staff_inventaris', 'admin', 'kepala_sekolah'],
+  },
+  {
+    label: 'Keuangan',
+    icon: FaMoneyBillWave,
+    href: '/keuangan',
+    roles: ['staff_keuangan', 'admin', 'kepala_sekolah', 'orang_tua'],
+  },
+  {
+    label: 'Pengumuman',
+    icon: FaBullhorn,
+    href: '/pengumuman',
+    roles: ['all'],
+  },
+  {
+    label: 'Laporan',
+    icon: FaFileAlt,
+    href: '/laporan',
+    roles: ['kepala_sekolah', 'admin', 'guru', 'wali_kelas'],
+  },
+  {
+    label: 'Manajemen User',
+    icon: FaUsers,
+    href: '/users',
+    roles: ['superadmin', 'admin'],
+  },
+  {
+    label: 'Pengaturan',
+    icon: FaCog,
+    href: '/settings',
+    roles: ['superadmin', 'admin'],
+  },
+];
+
+export default function DashboardLayout({ children, role = 'admin' }: DashboardLayoutProps) {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const router = useRouter();
+
+  const toggleMenu = (label: string) => {
+    if (expandedMenus.includes(label)) {
+      setExpandedMenus(expandedMenus.filter((item) => item !== label));
+    } else {
+      setExpandedMenus([...expandedMenus, label]);
+    }
+  };
+
+  const filterMenuByRole = (items: MenuItem[]) => {
+    return items.filter((item) => 
+      item.roles.includes('all') || item.roles.includes(role)
+    );
+  };
+
+  const handleLogout = () => {
+    // TODO: Implement logout logic
+    router.push('/login');
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-100">
+      {/* Navbar */}
+      <nav className="bg-white shadow-md fixed top-0 left-0 right-0 z-40">
+        <div className="flex items-center justify-between px-4 py-3">
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="text-gray-600 hover:text-primary-600 lg:hidden"
+            >
+              {sidebarOpen ? <FaTimes className="text-2xl" /> : <FaBars className="text-2xl" />}
+            </button>
+            <div className="flex items-center space-x-2">
+              <FaSchool className="text-primary-600 text-2xl" />
+              <span className="font-bold text-xl text-gray-800">SIS</span>
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-4">
+            {/* Notifications */}
+            <button className="relative text-gray-600 hover:text-primary-600">
+              <FaBell className="text-xl" />
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
+                3
+              </span>
+            </button>
+
+            {/* Profile */}
+            <div className="relative">
+              <button
+                onClick={() => setShowProfileMenu(!showProfileMenu)}
+                className="flex items-center space-x-2 text-gray-700 hover:text-primary-600"
+              >
+                <FaUserCircle className="text-3xl" />
+                <span className="hidden md:inline font-semibold">Admin</span>
+              </button>
+              {showProfileMenu && (
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-2 z-50">
+                  <a href="/profile" className="block px-4 py-2 text-gray-700 hover:bg-gray-100">
+                    <FaUserCircle className="inline mr-2" />
+                    Profil
+                  </a>
+                  <a href="/settings" className="block px-4 py-2 text-gray-700 hover:bg-gray-100">
+                    <FaCog className="inline mr-2" />
+                    Pengaturan
+                  </a>
+                  <hr className="my-2" />
+                  <button
+                    onClick={handleLogout}
+                    className="w-full text-left px-4 py-2 text-red-600 hover:bg-gray-100"
+                  >
+                    <FaSignOutAlt className="inline mr-2" />
+                    Logout
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      {/* Sidebar */}
+      <aside
+        className={`fixed top-0 left-0 h-full bg-white shadow-lg z-30 transition-transform duration-300 ${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        } lg:translate-x-0 w-64 pt-16`}
+      >
+        <div className="h-full overflow-y-auto pb-20">
+          <nav className="px-4 py-6">
+            {filterMenuByRole(menuItems).map((item) => (
+              <div key={item.label} className="mb-2">
+                {item.children ? (
+                  <>
+                    <button
+                      onClick={() => toggleMenu(item.label)}
+                      className="w-full flex items-center justify-between px-4 py-3 text-gray-700 hover:bg-primary-50 hover:text-primary-600 rounded-lg transition"
+                    >
+                      <div className="flex items-center space-x-3">
+                        <item.icon className="text-lg" />
+                        <span className="font-medium">{item.label}</span>
+                      </div>
+                      <span className={`transition-transform ${expandedMenus.includes(item.label) ? 'rotate-90' : ''}`}>
+                        ›
+                      </span>
+                    </button>
+                    {expandedMenus.includes(item.label) && (
+                      <div className="ml-4 mt-1 space-y-1">
+                        {filterMenuByRole(item.children).map((child) => (
+                          <a
+                            key={child.label}
+                            href={child.href}
+                            className="flex items-center space-x-3 px-4 py-2 text-gray-600 hover:bg-primary-50 hover:text-primary-600 rounded-lg transition text-sm"
+                          >
+                            <child.icon className="text-base" />
+                            <span>{child.label}</span>
+                          </a>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <a
+                    href={item.href}
+                    className="flex items-center space-x-3 px-4 py-3 text-gray-700 hover:bg-primary-50 hover:text-primary-600 rounded-lg transition"
+                  >
+                    <item.icon className="text-lg" />
+                    <span className="font-medium">{item.label}</span>
+                  </a>
+                )}
+              </div>
+            ))}
+          </nav>
+        </div>
+      </aside>
+
+      {/* Overlay for mobile */}
+      {sidebarOpen && (
+        <div
+          onClick={() => setSidebarOpen(false)}
+          className="fixed inset-0 bg-black bg-opacity-50 z-20 lg:hidden"
+        />
+      )}
+
+      {/* Main Content */}
+      <main className="lg:ml-64 pt-16 min-h-screen">
+        <div className="p-6">
+          {children}
+        </div>
+      </main>
+    </div>
+  );
+}

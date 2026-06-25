@@ -1,0 +1,537 @@
+// Prisma Schema - Sistem Informasi Sekolah
+// Database: PostgreSQL (Supabase)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// AUTHENTICATION & AUTHORIZATION
+// ============================================
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  username  String   @unique
+  password  String
+  role      Role     @default(SISWA)
+  status    Boolean  @default(true)
+  lastLogin DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  guru      Guru?
+  siswa     Siswa?
+  orangTua  OrangTua?
+
+  @@map("users")
+}
+
+enum Role {
+  SUPERADMIN
+  ADMIN
+  KEPALA_SEKOLAH
+  GURU
+  WALI_KELAS
+  SISWA
+  ORANG_TUA
+  STAFF_KEUANGAN
+  PETUGAS_PERPUSTAKAAN
+  STAFF_INVENTARIS
+  ADMIN_PPDB
+  ADMIN_BKK
+}
+
+// ============================================
+// MASTER DATA - SEKOLAH
+// ============================================
+
+model ProfilSekolah {
+  id                String   @id @default(uuid())
+  namaSekolah       String
+  npsn              String   @unique
+  nss               String?
+  alamat            String   @db.Text
+  kelurahan         String
+  kecamatan         String
+  kota              String
+  provinsi          String
+  kodePos           String?
+  telepon           String?
+  fax               String?
+  email             String?
+  website           String?
+  kepalaSekolah     String
+  nipKepalaSekolah  String
+  akreditasi        String?
+  tahunBerdiri      String?
+  luasTanah         String?
+  luasBangunan      String?
+  visi              String?  @db.Text
+  misi              String?  @db.Text
+  logoPath          String?
+  kopSuratPath      String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("profil_sekolah")
+}
+
+model TahunAjaran {
+  id            String   @id @default(uuid())
+  tahunAjaran   String   @unique
+  tanggalMulai  DateTime
+  tanggalSelesai DateTime
+  status        StatusTahunAjaran @default(TIDAK_AKTIF)
+  isLocked      Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  semester      Semester[]
+  kelas         Kelas[]
+  jadwal        JadwalPelajaran[]
+  absensi       Absensi[]
+  nilai         Nilai[]
+  rapor         Rapor[]
+
+  @@map("tahun_ajaran")
+}
+
+enum StatusTahunAjaran {
+  AKTIF
+  TIDAK_AKTIF
+  SELESAI
+}
+
+model Semester {
+  id              String   @id @default(uuid())
+  tahunAjaranId   String
+  semester        JenisSemester
+  tanggalMulai    DateTime
+  tanggalSelesai  DateTime
+  status          Boolean  @default(false)
+  isLocked        Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  tahunAjaran     TahunAjaran @relation(fields: [tahunAjaranId], references: [id], onDelete: Cascade)
+
+  @@map("semester")
+}
+
+enum JenisSemester {
+  GANJIL
+  GENAP
+}
+
+// ============================================
+// MASTER DATA - AKADEMIK
+// ============================================
+
+model Jurusan {
+  id          String   @id @default(uuid())
+  kode        String   @unique
+  nama        String
+  deskripsi   String?  @db.Text
+  kuota       Int?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  kelas       Kelas[]
+  siswa       Siswa[]
+  mapel       MataPelajaran[]
+
+  @@map("jurusan")
+}
+
+model MataPelajaran {
+  id              String   @id @default(uuid())
+  kode            String   @unique
+  nama            String
+  kelompok        KelompokMapel
+  jurusanId       String?
+  jamPelajaran    Int      @default(0)
+  kkm             Int      @default(75)
+  deskripsi       String?  @db.Text
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  jurusan         Jurusan? @relation(fields: [jurusanId], references: [id])
+  jadwal          JadwalPelajaran[]
+  nilai           Nilai[]
+
+  @@map("mata_pelajaran")
+}
+
+enum KelompokMapel {
+  UMUM
+  PRODUKTIF
+  MUATAN_LOKAL
+}
+
+model Kelas {
+  id              String   @id @default(uuid())
+  namaKelas       String
+  tingkat         String
+  jurusanId       String
+  tahunAjaranId   String
+  waliKelasId     String?
+  ruangan         String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  jurusan         Jurusan      @relation(fields: [jurusanId], references: [id])
+  tahunAjaran     TahunAjaran  @relation(fields: [tahunAjaranId], references: [id])
+  waliKelas       Guru?        @relation("WaliKelas", fields: [waliKelasId], references: [id])
+  siswa           Siswa[]
+  jadwal          JadwalPelajaran[]
+  absensi         Absensi[]
+
+  @@unique([namaKelas, tahunAjaranId])
+  @@map("kelas")
+}
+
+// ============================================
+// MASTER DATA - GURU
+// ============================================
+
+model Guru {
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  nip             String   @unique
+  nuptk           String?
+  nama            String
+  jenisKelamin    JenisKelamin
+  tempatLahir     String?
+  tanggalLahir    DateTime?
+  agama           String?
+  alamat          String?  @db.Text
+  noHp            String?
+  email           String?
+  foto            String?
+  mataPelajaran   String?
+  jabatan         String?
+  statusKepegawaian String?
+  status          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kelasWali       Kelas[]  @relation("WaliKelas")
+  jadwal          JadwalPelajaran[]
+  absensiGuru     AbsensiGuru[]
+
+  @@map("guru")
+}
+
+enum JenisKelamin {
+  L
+  P
+}
+
+// ============================================
+// MASTER DATA - SISWA
+// ============================================
+
+model Siswa {
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  nis             String   @unique
+  nisn            String   @unique
+  rfidCard        String?  @unique
+  nama            String
+  jenisKelamin    JenisKelamin
+  tempatLahir     String?
+  tanggalLahir    DateTime?
+  agama           String?
+  alamat          String?  @db.Text
+  noHp            String?
+  email           String?
+  foto            String?
+  kelasId         String?
+  jurusanId       String?
+  tahunMasuk      String?
+  status          StatusSiswa @default(AKTIF)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kelas           Kelas?   @relation(fields: [kelasId], references: [id])
+  jurusan         Jurusan? @relation(fields: [jurusanId], references: [id])
+  orangTua        OrangTua[]
+  absensi         Absensi[]
+  nilai           Nilai[]
+  rapor           Rapor[]
+
+  @@map("siswa")
+}
+
+enum StatusSiswa {
+  AKTIF
+  LULUS
+  PINDAH
+  KELUAR
+  ALUMNI
+}
+
+model OrangTua {
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  siswaId         String
+  namaAyah        String?
+  namaIbu         String?
+  namaWali        String?
+  noHpAyah        String?
+  noHpIbu         String?
+  noHpWali        String?
+  pekerjaanAyah   String?
+  pekerjaanIbu    String?
+  alamat          String?  @db.Text
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  siswa           Siswa    @relation(fields: [siswaId], references: [id], onDelete: Cascade)
+
+  @@map("orang_tua")
+}
+
+// ============================================
+// AKADEMIK - JADWAL & ABSENSI
+// ============================================
+
+model JadwalPelajaran {
+  id              String   @id @default(uuid())
+  tahunAjaranId   String
+  kelasId         String
+  mataPelajaranId String
+  guruId          String
+  hari            Hari
+  jamKe           Int
+  jamMulai        String
+  jamSelesai      String
+  ruangan         String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  tahunAjaran     TahunAjaran    @relation(fields: [tahunAjaranId], references: [id], onDelete: Cascade)
+  kelas           Kelas          @relation(fields: [kelasId], references: [id], onDelete: Cascade)
+  mataPelajaran   MataPelajaran  @relation(fields: [mataPelajaranId], references: [id], onDelete: Cascade)
+  guru            Guru           @relation(fields: [guruId], references: [id], onDelete: Cascade)
+
+  @@unique([kelasId, hari, jamKe, tahunAjaranId])
+  @@map("jadwal_pelajaran")
+}
+
+enum Hari {
+  SENIN
+  SELASA
+  RABU
+  KAMIS
+  JUMAT
+  SABTU
+}
+
+model Absensi {
+  id              String   @id @default(uuid())
+  tahunAjaranId   String
+  kelasId         String
+  siswaId         String
+  tanggal         DateTime
+  mataPelajaran   String?
+  status          StatusAbsensi
+  keterangan      String?  @db.Text
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  tahunAjaran     TahunAjaran @relation(fields: [tahunAjaranId], references: [id], onDelete: Cascade)
+  kelas           Kelas       @relation(fields: [kelasId], references: [id], onDelete: Cascade)
+  siswa           Siswa       @relation(fields: [siswaId], references: [id], onDelete: Cascade)
+
+  @@unique([siswaId, tanggal, mataPelajaran])
+  @@map("absensi")
+}
+
+enum StatusAbsensi {
+  HADIR
+  IZIN
+  SAKIT
+  ALPHA
+  TERLAMBAT
+}
+
+model AbsensiGuru {
+  id          String   @id @default(uuid())
+  guruId      String
+  tanggal     DateTime
+  status      StatusAbsensi
+  keterangan  String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  guru        Guru     @relation(fields: [guruId], references: [id], onDelete: Cascade)
+
+  @@unique([guruId, tanggal])
+  @@map("absensi_guru")
+}
+
+// ============================================
+// AKADEMIK - PENILAIAN & RAPOR
+// ============================================
+
+model Nilai {
+  id              String   @id @default(uuid())
+  tahunAjaranId   String
+  siswaId         String
+  mataPelajaranId String
+  semester        JenisSemester
+  nilaiTugas      Float?
+  nilaiUTS        Float?
+  nilaiUAS        Float?
+  nilaiAkhir      Float?
+  predikat        String?
+  deskripsi       String?  @db.Text
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  tahunAjaran     TahunAjaran   @relation(fields: [tahunAjaranId], references: [id], onDelete: Cascade)
+  siswa           Siswa         @relation(fields: [siswaId], references: [id], onDelete: Cascade)
+  mataPelajaran   MataPelajaran @relation(fields: [mataPelajaranId], references: [id], onDelete: Cascade)
+
+  @@unique([siswaId, mataPelajaranId, tahunAjaranId, semester])
+  @@map("nilai")
+}
+
+model Rapor {
+  id                  String   @id @default(uuid())
+  tahunAjaranId       String
+  siswaId             String
+  semester            JenisSemester
+  catatanWaliKelas    String?  @db.Text
+  absensiSakit        Int      @default(0)
+  absensiIzin         Int      @default(0)
+  absensiAlpha        Int      @default(0)
+  ekstrakurikuler     String?  @db.Text
+  prestasi            String?  @db.Text
+  validasiWaliKelas   Boolean  @default(false)
+  validasiKepsek      Boolean  @default(false)
+  status              StatusRapor @default(PROSES)
+  tanggalGenerate     DateTime?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  // Relations
+  tahunAjaran         TahunAjaran @relation(fields: [tahunAjaranId], references: [id], onDelete: Cascade)
+  siswa               Siswa       @relation(fields: [siswaId], references: [id], onDelete: Cascade)
+
+  @@unique([siswaId, tahunAjaranId, semester])
+  @@map("rapor")
+}
+
+enum StatusRapor {
+  BELUM
+  PROSES
+  SELESAI
+}
+
+// ============================================
+// PPDB (Penerimaan Peserta Didik Baru)
+// ============================================
+
+model PendaftaranPPDB {
+  id                  String   @id @default(uuid())
+  noPendaftaran       String   @unique
+  
+  // Data Pribadi
+  nama                String
+  nisn                String   @unique
+  nik                 String?
+  jenisKelamin        JenisKelamin
+  tempatLahir         String
+  tanggalLahir        DateTime
+  agama               String
+  alamat              String   @db.Text
+  rt                  String?
+  rw                  String?
+  kelurahan           String?
+  kecamatan           String?
+  kota                String?
+  provinsi            String?
+  kodePos             String?
+  noHp                String?
+  email               String?
+  
+  // Asal Sekolah
+  asalSekolah         String
+  nsnAsalSekolah      String?
+  alamatSekolah       String?  @db.Text
+  nomorIjazah         String?
+  tahunLulus          String
+  
+  // Pilihan Jurusan
+  pilihanJurusan1     String
+  pilihanJurusan2     String?
+  
+  // Data Orang Tua
+  namaAyah            String
+  namaIbu             String
+  pekerjaanAyah       String?
+  pekerjaanIbu        String?
+  penghasilanOrtu     String?
+  noHpOrtu            String
+  emailOrtu           String?
+  
+  // Dokumen Upload
+  fotoPath            String?
+  ijazahPath          String?
+  skhunPath           String?
+  kkPath              String?
+  aktaPath            String?
+  
+  // Status & Verifikasi
+  statusVerifikasi    StatusVerifikasi @default(PENDING)
+  statusSeleksi       StatusSeleksi @default(BELUM_SELEKSI)
+  catatanVerifikasi   String?  @db.Text
+  nilaiSeleksi        Float?
+  jurusanDiterima     String?
+  tanggalDaftar       DateTime @default(now())
+  tanggalVerifikasi   DateTime?
+  tanggalPengumuman   DateTime?
+  
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@map("pendaftaran_ppdb")
+}
+
+enum StatusVerifikasi {
+  PENDING
+  DIVERIFIKASI
+  DITOLAK
+  PERLU_PERBAIKAN
+}
+
+enum StatusSeleksi {
+  BELUM_SELEKSI
+  LULUS
+  TIDAK_LULUS
+  CADANGAN
+}
