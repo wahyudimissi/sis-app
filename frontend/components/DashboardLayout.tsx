@@ -58,6 +58,7 @@ const menuItems: MenuItem[] = [
     children: [
       { label: 'Jadwal Pelajaran', icon: Calendar, href: '/akademik/jadwal' },
       { label: 'Absensi', icon: ClipboardList, href: '/akademik/absensi' },
+      { label: 'Absensi RFID', icon: ClipboardList, href: '/akademik/absensi-rfid' },
       { label: 'Penilaian', icon: BarChart3, href: '/akademik/penilaian' },
       { label: 'E-Rapor', icon: FileText, href: '/akademik/rapor' },
     ],

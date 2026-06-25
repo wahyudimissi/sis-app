@@ -18,6 +18,7 @@ const updateSiswaSchema = z.object({
   noHp: z.string().optional(),
   email: z.string().email('Invalid email').optional().or(z.literal('')),
   foto: z.string().optional(),
+  rfidCard: z.string().nullable().optional(),
   kelasId: z.string().nullable().optional(),
   jurusanId: z.string().nullable().optional(),
   tahunMasuk: z.string().optional(),
@@ -143,7 +144,7 @@ export async function PUT(
         }
 
         // Check if NIS/NISN already exists (exclude current siswa)
-        if (data.nis || data.nisn) {
+        if (data.nis || data.nisn || data.rfidCard) {
           const duplicate = await prisma.siswa.findFirst({
             where: {
               AND: [
@@ -152,6 +153,7 @@ export async function PUT(
                   OR: [
                     ...(data.nis ? [{ nis: data.nis }] : []),
                     ...(data.nisn ? [{ nisn: data.nisn }] : []),
+                    ...(data.rfidCard ? [{ rfidCard: data.rfidCard }] : []),
                   ],
                 },
               ],
@@ -159,11 +161,12 @@ export async function PUT(
           });
 
           if (duplicate) {
-            return ApiResponseHelper.badRequest(
-              duplicate.nis === data.nis 
-                ? 'NIS already exists' 
-                : 'NISN already exists'
-            );
+            let message = 'NISN already exists';
+            if (duplicate.nis === data.nis) message = 'NIS already exists';
+            if (data.rfidCard && duplicate.rfidCard === data.rfidCard) {
+              message = 'RFID card already registered';
+            }
+            return ApiResponseHelper.badRequest(message);
           }
         }
 
@@ -221,6 +224,7 @@ export async function PUT(
           if (data.noHp !== undefined) siswaUpdateData.noHp = data.noHp;
           if (data.email !== undefined) siswaUpdateData.email = data.email;
           if (data.foto !== undefined) siswaUpdateData.foto = data.foto;
+          if (data.rfidCard !== undefined) siswaUpdateData.rfidCard = data.rfidCard || null;
           if (data.kelasId !== undefined) siswaUpdateData.kelasId = data.kelasId;
           if (data.jurusanId !== undefined) siswaUpdateData.jurusanId = data.jurusanId;
           if (data.tahunMasuk !== undefined) siswaUpdateData.tahunMasuk = data.tahunMasuk;

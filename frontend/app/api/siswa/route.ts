@@ -18,6 +18,7 @@ const siswaSchema = z.object({
   noHp: z.string().optional(),
   email: z.string().email('Invalid email').optional().or(z.literal('')),
   foto: z.string().optional(),
+  rfidCard: z.string().optional(),
   kelasId: z.string().optional(),
   jurusanId: z.string().optional(),
   tahunMasuk: z.string().optional(),
@@ -150,16 +151,18 @@ export async function POST(request: NextRequest) {
             OR: [
               { nis: data.nis },
               { nisn: data.nisn },
+              ...(data.rfidCard ? [{ rfidCard: data.rfidCard }] : []),
             ],
           },
         });
 
         if (existingSiswa) {
-          return ApiResponseHelper.badRequest(
-            existingSiswa.nis === data.nis 
-              ? 'NIS already exists' 
-              : 'NISN already exists'
-          );
+          let message = 'NISN already exists';
+          if (existingSiswa.nis === data.nis) message = 'NIS already exists';
+          if (data.rfidCard && existingSiswa.rfidCard === data.rfidCard) {
+            message = 'RFID card already registered';
+          }
+          return ApiResponseHelper.badRequest(message);
         }
 
         // Check if username already exists
@@ -207,6 +210,7 @@ export async function POST(request: NextRequest) {
               noHp: data.noHp,
               email: data.email,
               foto: data.foto,
+              rfidCard: data.rfidCard || null,
               kelasId: data.kelasId || null,
               jurusanId: data.jurusanId || null,
               tahunMasuk: data.tahunMasuk,

@@ -17,6 +17,7 @@ import {
   FaTimes,
   FaSpinner,
   FaUser,
+  FaIdCard,
 } from 'react-icons/fa';
 
 interface Student {
@@ -31,6 +32,7 @@ interface Student {
   alamat?: string;
   noHp?: string;
   email?: string;
+  rfidCard?: string;
   namaOrangTua?: string;
   noHpOrangTua?: string;
   kelasId?: string;
@@ -39,7 +41,8 @@ interface Student {
   foto?: string;
   kelas?: {
     id: string;
-    nama: string;
+    namaKelas?: string;
+    nama?: string;
     tingkat: string;
   };
 }
@@ -76,6 +79,10 @@ export default function DataSiswaPage() {
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [uploadingFoto, setUploadingFoto] = useState(false);
+  const [showRfidModal, setShowRfidModal] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [rfidValue, setRfidValue] = useState('');
+  const [savingRfid, setSavingRfid] = useState(false);
   
   const [formData, setFormData] = useState<FormData>({
     nis: '',
@@ -244,6 +251,62 @@ export default function DataSiswaPage() {
     } catch (err: any) {
       setError(err.message || 'Terjadi kesalahan');
     }
+  };
+
+  const handleOpenRfidModal = (student: Student) => {
+    setSelectedStudent(student);
+    setRfidValue(student.rfidCard || '');
+    setShowRfidModal(true);
+    setError('');
+  };
+
+  const handleCloseRfidModal = () => {
+    setShowRfidModal(false);
+    setSelectedStudent(null);
+    setRfidValue('');
+    setSavingRfid(false);
+  };
+
+  const saveRfidCard = async (value: string | null) => {
+    if (!selectedStudent) return;
+
+    setSavingRfid(true);
+    setError('');
+
+    try {
+      const response = await apiClient.put(`/api/siswa/${selectedStudent.id}`, {
+        rfidCard: value,
+      });
+
+      if (response.success) {
+        setSuccessMessage(
+          value
+            ? `RFID berhasil didaftarkan untuk ${selectedStudent.nama}`
+            : `RFID ${selectedStudent.nama} berhasil dihapus`
+        );
+        fetchStudents();
+        handleCloseRfidModal();
+        setTimeout(() => setSuccessMessage(''), 3000);
+      } else {
+        setError(response.message || 'Gagal menyimpan RFID');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Terjadi kesalahan saat menyimpan RFID');
+    } finally {
+      setSavingRfid(false);
+    }
+  };
+
+  const handleRfidSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const normalizedRfid = rfidValue.trim();
+
+    if (!normalizedRfid) {
+      setError('Nomor RFID tidak boleh kosong');
+      return;
+    }
+
+    await saveRfidCard(normalizedRfid);
   };
 
   const handleFotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -417,6 +480,7 @@ export default function DataSiswaPage() {
                       <th className="text-left py-4 px-6 text-gray-700 font-semibold">Nama</th>
                       <th className="text-center py-4 px-6 text-gray-700 font-semibold">L/P</th>
                       <th className="text-left py-4 px-6 text-gray-700 font-semibold">Kelas</th>
+                      <th className="text-left py-4 px-6 text-gray-700 font-semibold">RFID</th>
                       <th className="text-center py-4 px-6 text-gray-700 font-semibold">Status</th>
                       <th className="text-center py-4 px-6 text-gray-700 font-semibold">Aksi</th>
                     </tr>
@@ -455,7 +519,21 @@ export default function DataSiswaPage() {
                               {student.jenisKelamin === 'L' ? 'L' : 'P'}
                             </span>
                           </td>
-                          <td className="py-4 px-6 text-gray-800">{student.kelas?.nama || '-'}</td>
+                          <td className="py-4 px-6 text-gray-800">
+                            {student.kelas?.namaKelas || student.kelas?.nama || '-'}
+                          </td>
+                          <td className="py-4 px-6 text-gray-800">
+                            {student.rfidCard ? (
+                              <span className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-sm font-medium text-blue-700">
+                                <FaIdCard />
+                                {student.rfidCard}
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-sm text-gray-600">
+                                Belum terdaftar
+                              </span>
+                            )}
+                          </td>
                           <td className="py-4 px-6 text-center">
                             <span
                               className={`inline-flex items-center px-3 py-1 rounded-full text-sm ${
@@ -471,6 +549,13 @@ export default function DataSiswaPage() {
                           </td>
                           <td className="py-4 px-6">
                             <div className="flex items-center justify-center gap-2">
+                              <button
+                                onClick={() => handleOpenRfidModal(student)}
+                                className="text-blue-600 hover:text-blue-800 p-2 hover:bg-blue-50 rounded"
+                                title="Daftarkan RFID"
+                              >
+                                <FaIdCard />
+                              </button>
                               <button
                                 onClick={() => handleOpenModal(student)}
                                 className="text-yellow-600 hover:text-yellow-800 p-2 hover:bg-yellow-50 rounded"
@@ -491,7 +576,7 @@ export default function DataSiswaPage() {
                       ))
                     ) : (
                       <tr>
-                        <td colSpan={9} className="py-8 text-center text-gray-500">
+                        <td colSpan={10} className="py-8 text-center text-gray-500">
                           Data siswa tidak ditemukan
                         </td>
                       </tr>
@@ -509,6 +594,97 @@ export default function DataSiswaPage() {
             </>
           )}
         </div>
+
+        {/* RFID Registration Modal */}
+        {showRfidModal && selectedStudent && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl shadow-xl w-full max-w-lg">
+              <div className="border-b px-6 py-4 flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-800">Daftarkan RFID</h2>
+                  <p className="text-sm text-gray-600 mt-1">
+                    {selectedStudent.nama} - NIS {selectedStudent.nis}
+                  </p>
+                </div>
+                <button
+                  onClick={handleCloseRfidModal}
+                  className="text-gray-600 hover:text-gray-800"
+                >
+                  <FaTimes size={24} />
+                </button>
+              </div>
+
+              <form onSubmit={handleRfidSubmit} className="p-6 space-y-4">
+                <div className="rounded-lg bg-blue-50 border border-blue-100 p-4 text-blue-800">
+                  <div className="flex items-start gap-3">
+                    <FaIdCard className="mt-1 text-xl" />
+                    <div>
+                      <p className="font-semibold">Scan atau ketik nomor kartu RFID</p>
+                      <p className="text-sm mt-1">
+                        Klik kolom input, lalu tempelkan kartu pada reader. Jika reader mengirim tombol Enter, data akan langsung tersimpan.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-gray-700 font-semibold mb-2">
+                    Nomor RFID <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={rfidValue}
+                    onChange={(e) => setRfidValue(e.target.value)}
+                    onFocus={(e) => e.currentTarget.select()}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none text-lg font-mono"
+                    autoFocus
+                    placeholder="Contoh: 04A1B2C3D4"
+                  />
+                  {selectedStudent.rfidCard && (
+                    <p className="text-sm text-gray-500 mt-2">
+                      RFID saat ini: <span className="font-mono">{selectedStudent.rfidCard}</span>
+                    </p>
+                  )}
+                </div>
+
+                {error && (
+                  <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+                    {error}
+                  </div>
+                )}
+
+                <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                  {selectedStudent.rfidCard && (
+                    <button
+                      type="button"
+                      onClick={() => saveRfidCard(null)}
+                      disabled={savingRfid}
+                      className="px-6 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition disabled:opacity-60"
+                    >
+                      Hapus RFID
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleCloseRfidModal}
+                    disabled={savingRfid}
+                    className="flex-1 px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition disabled:opacity-60"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={savingRfid}
+                    className="flex-1 px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition disabled:opacity-60 flex items-center justify-center gap-2"
+                  >
+                    {savingRfid && <FaSpinner className="animate-spin" />}
+                    Simpan RFID
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
 
         {/* Modal Form */}
         {showModal && (
